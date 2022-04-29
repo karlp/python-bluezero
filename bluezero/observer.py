@@ -35,6 +35,7 @@ class Scanner:
     on_eddystone_tlm = None
     on_ibeacon = None
     on_altbeacon = None
+    on_advertising = None
 
     @classmethod
     def start_event_loop(cls):
@@ -164,25 +165,25 @@ class Scanner:
         rssi = bz_device_obj.RSSI
         service_data = bz_device_obj.service_data
         manufacturer_data = bz_device_obj.manufacturer_data
+        # Always remove them, so we can see everything.
+        cls.remove_list.add(str(bz_device_obj.remote_device_path))
+        if cls.on_advertising:
+            cls.on_advertising(bz_device_obj)
         if service_data and cls.ble_16bit_match('feaa', service_data):
             cls.process_eddystone(service_data[EDDYSTONE_SRV_UUID],
                                   rssi)
-            cls.remove_list.add(str(bz_device_obj.remote_device_path))
         elif manufacturer_data:
             for mfg_id in manufacturer_data:
                 # iBeacon 0x004c
                 if mfg_id == 0x004c and manufacturer_data[mfg_id][0] == 0x02:
                     cls.process_ibeacon(manufacturer_data[mfg_id], rssi)
-                    cls.remove_list.add(str(bz_device_obj.remote_device_path))
                 # AltBeacon 0xacbe
                 elif all((mfg_id == 0xffff,
                           manufacturer_data[mfg_id][0:2] == [0xbe, 0xac])):
                     cls.process_ibeacon(manufacturer_data[mfg_id], rssi,
                                         beacon_type='AltBeacon')
-                    cls.remove_list.add(str(bz_device_obj.remote_device_path))
                 # elif mfg_id == 0x0310:
                 #     print(f'\t\tBlue Maestro {manufacturer_data[mfg_id]}')
-                #     remove_list.add(device_path)
         cls.clean_beacons()
 
     @classmethod
@@ -191,7 +192,8 @@ class Scanner:
                           on_eddystone_uid=None,
                           on_eddystone_tlm=None,
                           on_ibeacon=None,
-                          on_altbeacon=None):
+                          on_altbeacon=None,
+                          on_advertising=None):
         """
         Start scan for beacons. Provided callback will be called if matching
         beacon type is found.
@@ -209,6 +211,8 @@ class Scanner:
         :param on_eddystone_tlm: Callback for Eddystone TLM format
         :param on_ibeacon: Callback for iBeacon format
         :param on_altbeacon: Callback for AltBeacon format
+        :param on_advertising: Callback for receiving all raw advertisements.
+            (This will be called first, as _well_ as any specifics!)
         """
         cls.dongle = adapter.Adapter()
         cls.on_eddystone_url = on_eddystone_url
@@ -216,6 +220,7 @@ class Scanner:
         cls.on_eddystone_tlm = on_eddystone_tlm
         cls.on_ibeacon = on_ibeacon
         cls.on_altbeacon = on_altbeacon
+        cls.on_advertising = on_advertising
 
         cls.dongle.on_device_found = cls.on_device_found
 
