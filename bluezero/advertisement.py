@@ -129,6 +129,13 @@ class Advertisement(dbus.service.Object):
                         'ManufacturerData',
                         {company_id: dbus.Array(data, signature='y')})
 
+    def manufacturer_data2(self, data_dict):
+        """Set of Manufacturer Data to be broadcast"""
+        value = {company_id : dbus.Array(data, signature='y') for company_id, data in data_dict.items()}
+        return self.Set(constants.LE_ADVERTISEMENT_IFACE,
+                        'ManufacturerData',
+                        value)
+
     def solicit_UUIDs(self):  # pylint: disable=invalid-name
         """Manufacturer Data to be broadcast (Currently not supported)"""
         pass
