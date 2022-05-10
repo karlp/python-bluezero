@@ -81,7 +81,8 @@ class Advertisement(dbus.service.Object):
                 'ServiceData': None,
                 'IncludeTxPower': False,
                 'Appearance': None,
-                'LocalName': None
+                'LocalName': None,
+                'SecondaryChannel': None,
             }
         }
 
@@ -174,6 +175,18 @@ class Advertisement(dbus.service.Object):
         self.Set(constants.LE_ADVERTISEMENT_IFACE, 'LocalName', name)
 
     @property
+    def secondary_channel(self):
+        """
+        Secondary channel to use, one of '1M', '2M' or 'Coded'.
+        Setting this will
+        """
+        return self.Get(constants.LE_ADVERTISEMENT_IFACE, 'SecondaryChannel')
+
+    @secondary_channel.setter
+    def secondary_channel(self, name):
+        self.Set(constants.LE_ADVERTISEMENT_IFACE, 'SecondaryChannel', name)
+
+    @property
     def appearance(self):
         """Appearance to be used in the advertising report."""
         return self.Get(constants.LE_ADVERTISEMENT_IFACE, 'Appearance')
@@ -225,6 +238,9 @@ class Advertisement(dbus.service.Object):
                     self.props[interface_name]['Appearance'])
         response['IncludeTxPower'] = dbus.Boolean(
             self.props[interface_name]['IncludeTxPower'])
+        if self.props[interface_name]['SecondaryChannel'] is not None:
+            response['SecondaryChannel'] = dbus.String(
+                self.props[interface_name]['SecondaryChannel'])
 
         return response
 
